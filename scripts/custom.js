@@ -1,319 +1,207 @@
-(function () {
-  'use strict';
+/* ============================================================
+ * 澜玥 / 云尚 主题共享交互脚本
+ *
+ * 与 TemplateEngine 内联脚本的分工：
+ * - 内联脚本：阅读进度条 / 回到顶部 / 图片放大 / 代码块复制
+ *   （采用 rAF + transform 性能优化方案）
+ * - custom.js（本文件）：TOC 高亮 / 标题锚点 / 导航高亮
+ *
+ * 优先级：内联脚本已处理的功能，custom.js 不重复绑定，避免进度条抖动。
+ * 标记约定：内联脚本会在元素上写 data-gridea-inline="1"，
+ *          custom.js 检测到后跳过。
+ * ============================================================ */
+(function() {
+    'use strict';
 
-  /**
-   * 樱花主题 JavaScript
-   * 7 个功能模块，IIFE 包裹，跳过 data-gridea-inline="1" 防止重复绑定
-   */
+    // ===== 工具：节流（每帧最多触发一次）=====
+    function rafThrottle(fn) {
+        var ticking = false;
+        return function() {
+            var args = arguments, ctx = this;
+            if (!ticking) {
+                requestAnimationFrame(function() { fn.apply(ctx, args); ticking = false; });
+                ticking = true;
+            }
+        };
+    }
 
-  // 防止重复初始化
-  if (window.__sakuraThemeInitialized) return;
-  window.__sakuraThemeInitialized = true;
+    // ===== 1. 阅读进度条（备用）=====
+    (function readingProgress() {
+        var bar = document.getElementById('reading-progress');
+        if (!bar) return;
+        if (bar.dataset.grideaInline === '1') return;
+        bar.dataset.grideaHandled = '1';
 
-  /**
-   * 跳过标记为 data-gridea-inline="1" 的元素
-   */
-  function shouldSkip(el) {
-    return el && el.getAttribute && el.getAttribute('data-gridea-inline') === '1';
-  }
+        var onScroll = rafThrottle(function() {
+            var doc = document.documentElement;
+            var scrollTop = window.scrollY || doc.scrollTop || document.body.scrollTop;
+            var scrollHeight = doc.scrollHeight - doc.clientHeight;
+            var percent = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+            bar.style.width = Math.max(0, Math.min(100, percent)) + '%';
+        });
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll, { passive: true });
+        onScroll();
+    })();
 
-  /**
-   * 1. 代码块复制按钮
-   * 为 .post-content pre 添加 .code-copy-btn
-   */
-  function initCodeCopy() {
-    var pres = document.querySelectorAll('.post-content pre');
-    Array.prototype.forEach.call(pres, function (pre) {
-      if (shouldSkip(pre)) return;
-      if (pre.querySelector('.code-copy-btn')) return;
+    // ===== 2. 回到顶部（备用）=====
+    (function backToTop() {
+        var btn = document.getElementById('back-to-top');
+        if (!btn) return;
+        if (btn.dataset.grideaInline === '1') return;
+        btn.dataset.grideaHandled = '1';
 
-      pre.style.position = pre.style.position || 'relative';
+        var onScroll = rafThrottle(function() {
+            if (window.scrollY > 400) btn.classList.add('visible');
+            else btn.classList.remove('visible');
+        });
+        window.addEventListener('scroll', onScroll, { passive: true });
+        btn.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    })();
 
-      var btn = document.createElement('button');
-      btn.className = 'code-copy-btn';
-      btn.textContent = '复制';
-      btn.setAttribute('data-gridea-inline', '1');
+    // ===== 3. 图片放大（备用）=====
+    (function imageZoom() {
+        var overlay = document.getElementById('image-zoom-overlay');
+        var zoomImg = document.getElementById('image-zoom-img');
+        if (!overlay || !zoomImg) return;
+        if (overlay.dataset.grideaInline === '1') return;
+        overlay.dataset.grideaHandled = '1';
 
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var code = pre.querySelector('code');
-        var text = code ? code.textContent : pre.textContent;
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function () {
-            btn.textContent = '已复制';
-            setTimeout(function () { btn.textContent = '复制'; }, 2000);
-          }).catch(function () {
-            fallbackCopy(text);
-            btn.textContent = '已复制';
-            setTimeout(function () { btn.textContent = '复制'; }, 2000);
-          });
-        } else {
-          fallbackCopy(text);
-          btn.textContent = '已复制';
-          setTimeout(function () { btn.textContent = '复制'; }, 2000);
+        function open(src, alt) {
+            zoomImg.src = src;
+            zoomImg.alt = alt || '';
+            overlay.classList.add('visible');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
         }
-      });
-
-      pre.appendChild(btn);
-    });
-  }
-
-  /**
-   * 兼容性复制方法
-   */
-  function fallbackCopy(text) {
-    var textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.select();
-    try {
-      document.execCommand('copy');
-    } catch (err) {
-      // 忽略
-    }
-    document.body.removeChild(textarea);
-  }
-
-  /**
-   * 2. 回到顶部
-   * #back-to-top 的 .visible 类切换
-   */
-  function initBackToTop() {
-    var btn = document.getElementById('back-to-top');
-    if (!btn || shouldSkip(btn)) return;
-
-    var ticking = false;
-
-    function onScroll() {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(function () {
-        if (window.scrollY > 300) {
-          btn.classList.add('visible');
-        } else {
-          btn.classList.remove('visible');
+        function close() {
+            overlay.classList.remove('visible');
+            overlay.setAttribute('aria-hidden', 'true');
+            zoomImg.src = '';
+            document.body.style.overflow = '';
         }
-        ticking = false;
-      });
-    }
+        document.querySelectorAll('.post-content img, .post-feature img').forEach(function(img) {
+            img.style.cursor = 'zoom-in';
+            img.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                open(img.src, img.alt);
+            });
+        });
+        overlay.addEventListener('click', close);
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay.classList.contains('visible')) close();
+        });
+    })();
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    // ===== 4. 代码块复制（备用）=====
+    (function codeCopy() {
+        document.querySelectorAll('.post-content pre').forEach(function(pre) {
+            if (pre.querySelector('.code-copy-btn')) return;
+            var btn = document.createElement('button');
+            btn.className = 'code-copy-btn';
+            btn.type = 'button';
+            btn.textContent = '复制';
+            btn.setAttribute('aria-label', '复制代码');
+            pre.appendChild(btn);
 
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    onScroll();
-  }
-
-  /**
-   * 3. 阅读进度条
-   * #reading-progress 的 transform: scaleX(...)，rAF 节流
-   */
-  function initReadingProgress() {
-    var bar = document.getElementById('reading-progress');
-    if (!bar || shouldSkip(bar)) return;
-
-    var ticking = false;
-
-    function update() {
-      var docEl = document.documentElement;
-      var scrollHeight = docEl.scrollHeight - window.innerHeight;
-      var progress = scrollHeight > 0 ? window.scrollY / scrollHeight : 0;
-      bar.style.transform = 'scaleX(' + progress + ')';
-      ticking = false;
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
-
-    update();
-  }
-
-  /**
-   * 4. 图片点击放大
-   * .post-content img 点击触发 #image-zoom-overlay
-   */
-  function initImageZoom() {
-    var overlay = document.getElementById('image-zoom-overlay');
-    var zoomImg = document.getElementById('image-zoom-img');
-    if (!overlay || !zoomImg) return;
-    if (shouldSkip(overlay)) return;
-
-    var images = document.querySelectorAll('.post-content img');
-    Array.prototype.forEach.call(images, function (img) {
-      if (shouldSkip(img)) return;
-      if (img.getAttribute('data-zoom-bound') === '1') return;
-      img.setAttribute('data-zoom-bound', '1');
-
-      img.addEventListener('click', function (e) {
-        e.preventDefault();
-        zoomImg.src = img.src;
-        overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-      });
-    });
-
-    function closeOverlay() {
-      overlay.classList.remove('active');
-      document.body.style.overflow = '';
-    }
-
-    overlay.addEventListener('click', closeOverlay);
-
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && overlay.classList.contains('active')) {
-        closeOverlay();
-      }
-    });
-  }
-
-  /**
-   * 5. 目录高亮
-   * .toc a 滚动高亮当前章节
-   */
-  function initTocHighlight() {
-    var tocLinks = document.querySelectorAll('.toc a');
-    if (tocLinks.length === 0) return;
-
-    var headings = [];
-    Array.prototype.forEach.call(tocLinks, function (link) {
-      if (shouldSkip(link)) return;
-      var href = link.getAttribute('href');
-      if (href && href.charAt(0) === '#') {
-        var target = document.getElementById(href.substring(1));
-        if (target) {
-          headings.push({ el: target, link: link });
+            btn.addEventListener('click', function() {
+                var code = pre.querySelector('code');
+                var text = code ? code.innerText : pre.innerText;
+                var done = function() {
+                    btn.textContent = '已复制';
+                    btn.classList.add('copied');
+                    setTimeout(function() {
+                        btn.textContent = '复制';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                };
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done, function() { fallback(text); done(); });
+                } else {
+                    fallback(text); done();
+                }
+            });
+        });
+        function fallback(text) {
+            var ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (e) {}
+            document.body.removeChild(ta);
         }
-      }
-    });
+    })();
 
-    if (headings.length === 0) return;
+    // ===== 5. TOC 高亮（当前阅读章节高亮）=====
+    (function tocHighlight() {
+        var tocLinks = document.querySelectorAll('.post-toc a[href^="#"]');
+        if (tocLinks.length === 0) return;
 
-    var ticking = false;
+        var headingMap = {};
+        tocLinks.forEach(function(link) {
+            var id = decodeURIComponent(link.getAttribute('href').replace('#', ''));
+            var target = document.getElementById(id);
+            if (target) headingMap[id] = link;
+        });
 
-    function update() {
-      var scrollPos = window.scrollY + 120;
-      var current = null;
+        var headings = Object.keys(headingMap).map(function(id) { return document.getElementById(id); }).filter(Boolean);
+        if (headings.length === 0) return;
 
-      for (var i = 0; i < headings.length; i++) {
-        if (headings[i].el.offsetTop <= scrollPos) {
-          current = headings[i];
-        } else {
-          break;
-        }
-      }
+        var activeId = null;
+        var onScroll = rafThrottle(function() {
+            var scrollY = window.scrollY + 120;
+            var current = headings[0].id;
+            for (var i = 0; i < headings.length; i++) {
+                if (headings[i].offsetTop <= scrollY) current = headings[i].id;
+                else break;
+            }
+            if (current !== activeId) {
+                if (activeId && headingMap[activeId]) headingMap[activeId].classList.remove('active');
+                if (current && headingMap[current]) {
+                    headingMap[current].classList.add('active');
+                    try { headingMap[current].scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {}
+                }
+                activeId = current;
+            }
+        });
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    })();
 
-      Array.prototype.forEach.call(tocLinks, function (l) {
-        l.classList.remove('active');
-      });
+    // ===== 6. 标题锚点（hover 标题显示 # 锚点）=====
+    (function headerAnchors() {
+        document.querySelectorAll('.post-content h1, .post-content h2, .post-content h3, .post-content h4').forEach(function(h) {
+            if (!h.id) return;
+            if (h.querySelector('.header-anchor')) return;
+            var a = document.createElement('a');
+            a.className = 'header-anchor';
+            a.href = '#' + h.id;
+            a.textContent = '#';
+            a.setAttribute('aria-label', '链接到本节');
+            h.appendChild(a);
+        });
+    })();
 
-      if (current) {
-        current.link.classList.add('active');
-      }
-      ticking = false;
-    }
-
-    function onScroll() {
-      if (!ticking) {
-        requestAnimationFrame(update);
-        ticking = true;
-      }
-    }
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    update();
-  }
-
-  /**
-   * 6. 标题锚点
-   * .post-content h1-h6 添加 .header-anchor
-   */
-  function initHeaderAnchors() {
-    var headers = document.querySelectorAll(
-      '.post-content h1, .post-content h2, .post-content h3, ' +
-      '.post-content h4, .post-content h5, .post-content h6'
-    );
-
-    Array.prototype.forEach.call(headers, function (h) {
-      if (shouldSkip(h)) return;
-      if (h.querySelector('.header-anchor')) return;
-
-      var id = h.id;
-      if (!id) return;
-
-      var anchor = document.createElement('a');
-      anchor.className = 'header-anchor';
-      anchor.href = '#' + id;
-      anchor.textContent = '#';
-      anchor.title = '永久链接';
-      anchor.setAttribute('data-gridea-inline', '1');
-      h.appendChild(anchor);
-    });
-  }
-
-  /**
-   * 7. 导航高亮
-   * .nav-link 当前页高亮
-   */
-  function initNavHighlight() {
-    var navLinks = document.querySelectorAll('.nav-link');
-    if (navLinks.length === 0) return;
-
-    var currentPath = window.location.pathname;
-    // 去除尾部斜杠统一比较
-    var normalizedCurrent = currentPath.replace(/\/+$/, '') || '/';
-
-    Array.prototype.forEach.call(navLinks, function (link) {
-      if (shouldSkip(link)) return;
-      var href = link.getAttribute('href');
-      if (!href || href === '#' || href.charAt(0) === '#') return;
-
-      try {
-        var url = new URL(href, window.location.origin);
-        var linkPath = url.pathname.replace(/\/+$/, '') || '/';
-
-        if (linkPath === normalizedCurrent) {
-          link.classList.add('active');
-        } else if (linkPath !== '/' && normalizedCurrent.indexOf(linkPath) === 0) {
-          // 前缀匹配（子路径）
-          link.classList.add('active');
-        }
-      } catch (e) {
-        // 忽略无效 URL
-      }
-    });
-  }
-
-  /**
-   * 初始化所有模块
-   */
-  function init() {
-    initCodeCopy();
-    initBackToTop();
-    initReadingProgress();
-    initImageZoom();
-    initTocHighlight();
-    initHeaderAnchors();
-    initNavHighlight();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+    // ===== 7. 当前导航高亮（基于 location.pathname）=====
+    (function navHighlight() {
+        var navLinks = document.querySelectorAll('.site-nav a');
+        if (navLinks.length === 0) return;
+        var current = window.location.pathname.replace(/\/index\.html$/i, '/').toLowerCase();
+        navLinks.forEach(function(link) {
+            try {
+                var href = link.getAttribute('href');
+                if (!href || href.startsWith('http') || href.startsWith('mailto:')) return;
+                var url = new URL(href, window.location.origin);
+                var linkPath = url.pathname.replace(/\/index\.html$/i, '/').toLowerCase();
+                if (linkPath === current || (linkPath !== '/' && current.indexOf(linkPath) === 0)) {
+                    link.classList.add('active');
+                }
+            } catch (e) {}
+        });
+    })();
 })();
