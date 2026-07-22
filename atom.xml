@@ -1,1 +1,33 @@
-<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>My Blog</title><subtitle></subtitle><id>/</id><link href="/"/><updated>2026-07-22T21:09:34Z</updated><entry><title>5</title><id>post/1784652274404-5/</id><link href="post/1784652274404-5/"/><updated>2026-07-22 00:44:30T00:00:00Z</updated><summary></summary><content type="html"></content></entry><entry><title>4</title><id>post/1784652258392-4/</id><link href="post/1784652258392-4/"/><updated>2026-07-22 00:44:14T00:00:00Z</updated><summary></summary><content type="html"></content></entry><entry><title>3</title><id>post/1784652242794-3/</id><link href="post/1784652242794-3/"/><updated>2026-07-22 00:43:58T00:00:00Z</updated><summary></summary><content type="html"></content></entry><entry><title>2</title><id>post/1784652235886-2/</id><link href="post/1784652235886-2/"/><updated>2026-07-22 00:43:51T00:00:00Z</updated><summary></summary><content type="html"></content></entry><entry><title>1</title><id>post/1784652225258-1/</id><link href="post/1784652225258-1/"/><updated>2026-07-22 00:43:41T00:00:00Z</updated><summary></summary><content type="html"></content></entry></feed>
+<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>My Blog</title><subtitle></subtitle><id>/</id><link href="/"/><updated>2026-07-23T01:52:48Z</updated><entry><title>5</title><id>post/1784652274404-5/</id><link href="post/1784652274404-5/"/><updated>2026-07-22 00:44:30T00:00:00Z</updated><summary>空状态引导：无文章/无标签时的友好提示
+长按快捷菜单：文章卡片长按弹出编辑/删除/置顶/复制链接
+首次启动引导：新用户引导页</summary><content type="html">&lt;p&gt;空状态引导：无文章/无标签时的友好提示&lt;/p&gt;
+&lt;p&gt;长按快捷菜单：文章卡片长按弹出编辑/删除/置顶/复制链接&lt;/p&gt;
+&lt;p&gt;首次启动引导：新用户引导页&lt;/p&gt;
+</content></entry><entry><title>4</title><id>post/1784652258392-4/</id><link href="post/1784652258392-4/"/><updated>2026-07-22 00:44:14T00:00:00Z</updated><summary>批量操作：已有全选，但缺批量删除/批量导出/批量打标签</summary><content type="html">&lt;p&gt;批量操作：已有全选，但缺批量删除/批量导出/批量打标签&lt;/p&gt;
+</content></entry><entry><title>3</title><id>post/1784652242794-3/</id><link href="post/1784652242794-3/"/><updated>2026-07-22 00:43:58T00:00:00Z</updated><summary>1.SEO 优化：sitemap.xml、robots.txt、JSON-LD 结构化数据、Open Graph 标签
+2.增量构建：只渲染修改过的文章，提升大文章量下的构建速度
+3.404 页面：自定义 404页面
+4.一键部署：部署前自...</summary><content type="html">&lt;p&gt;1.SEO 优化：sitemap.xml、robots.txt、JSON-LD 结构化数据、Open Graph 标签
+2.增量构建：只渲染修改过的文章，提升大文章量下的构建速度
+3.404 页面：自定义 404页面
+4.一键部署：部署前自动构建再部署，减少手动步骤
+5.部署历史：记录每次部署的时间/平台/文件数/结果，支持查看历史
+6.部署回滚：保留上次文件清单，支持一键回滚
+7.空状态引导：改进一下无文章/无标签时的友好提示
+8.首次启动引导：新用户引导页，介绍软件基本功能。
+9.回收站：删除文章先进回收站，避免误删丢失，回收站只保存三天，回收站内可自行决定彻底删除，添加批量管理
+10.自动备份：定时备份到本地文件夹，每天备份一次全局配置和文章，每7天清理一次旧备份
+(这里修改一下站点目录输出规则，原先站点输出目录是Document/Gridea，现在在Gridea目录下，增加一个备份目录backup文件夹，用于存放定时备份文件，原先渲染输出的静态网站文件，存放在Document/Gridea/output，即在Gridea目录下新建一个output文件夹，用于储存需要上传仓库的静态网站文件)
+11.批量操作：已有全选删除，缺乏批量导出md文件/批量给文章打标签
+12.删除设置目录中的“使用统计”选项，清理与其有关的代码
+13.日志管理的记录范围修改为覆盖整个软件，不仅仅是只记录关键操作，日志添加筛选选项，可以隐藏非重要日志
+除以上列出的，其余计划功能已经实现，不必再改进&lt;/p&gt;
+</content></entry><entry><title>2</title><id>post/1784652235886-2/</id><link href="post/1784652235886-2/"/><updated>2026-07-22 00:43:51T00:00:00Z</updated><summary>1.修改文章导出路径为Document/Gridea/markdown(在Gridea目录下新建一个markdown文件夹)，同时文章编辑页面的二级界面(版本历史和导出为markdown文件)，删去“导出为markdown文件”(文章管理已...</summary><content type="html">&lt;p&gt;1.修改文章导出路径为Document/Gridea/markdown(在Gridea目录下新建一个markdown文件夹)，同时文章编辑页面的二级界面(版本历史和导出为markdown文件)，删去“导出为markdown文件”(文章管理已有批量导出，这里属于重复)，将版本历史功能放置在文章编辑页面保存键右侧
+2.写作统计的写作日历改为近三个月记录展示，原本六个月导致月份分类文字显示不全。如果可以能不能做成日历样式的，这样就可以看到几月几号的写作次数多
+3.标签删除后一同进入回收站，回收站内将文章和标签用两个页面分开管理，避免混淆。
+4.APP内所有界面的导出图标都是类似于下载的图标，很容易误解为导入，请更换没有歧义的导出图标
+5.日志设置仅保留近七天内的日志，超出时限的直接清楚，同时删除时，选择弹窗可以自行选择清除全部日志，或者除了三天内，五天内，七天内以外时限的日志，给予用户更多选择。
+6.这是一个入口迁移的大工程：导航栏tab新建一个“部署”页面和一个“主题”页面，设置界面中，部署平台和评论以及数据里“站点生成”的等入口，统一迁移到“部署”页面；站点信息和博客主题入口一同迁移到主题页面放置，以上迁移后，具体入口怎么在新页面安排，你可以自行根据操作逻辑排列
+以上是新的任务，麻烦您了&lt;/p&gt;
+</content></entry><entry><title>1</title><id>post/1784652225258-1/</id><link href="post/1784652225258-1/"/><updated>2026-07-22 00:43:41T00:00:00Z</updated><summary>写作日历不用全部月份展开展示，像日常的日历APP一样，滑动切换月份就行，请改进</summary><content type="html">&lt;p&gt;写作日历不用全部月份展开展示，像日常的日历APP一样，滑动切换月份就行，请改进&lt;/p&gt;
+</content></entry></feed>
